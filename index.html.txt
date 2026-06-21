@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Infinite Scroll Photo Gallery</title>
+
+    <link rel="stylesheet" href="style.css" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <!-- Loading Screen -->
+    <div id="page-loader">
+        <div class="loader-spinner"></div>
+        <h2>Loading Gallery...</h2>
+    </div>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <h1>📸 Infinite Scroll Photo Gallery</h1>
+            <p>Explore beautiful images with search, collections, and lightbox.</p>
+
+            <div class="search-wrapper">
+                <input
+                    type="text"
+                    id="searchInput"
+                    placeholder="Search photos..."
+                    autocomplete="off"
+                >
+                <button id="searchBtn">Search</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Layout -->
+    <main class="main-layout">
+
+        <!-- Sidebar -->
+        <aside class="sidebar">
+
+            <h2>Collections</h2>
+
+            <div class="collections">
+
+                <button class="collection-btn active" data-query="">
+                    Editorial
+                </button>
+
+                <button class="collection-btn" data-query="nature">
+                    🌿 Nature
+                </button>
+
+                <button class="collection-btn" data-query="architecture">
+                    🏙 Architecture
+                </button>
+
+                <button class="collection-btn" data-query="travel">
+                    ✈ Travel
+                </button>
+
+                <button class="collection-btn" data-query="technology">
+                    💻 Technology
+                </button>
+
+                <button class="collection-btn" data-query="animals">
+                    🐶 Animals
+                </button>
+
+                <button class="collection-btn" data-query="food">
+                    🍔 Food
+                </button>
+
+                <button class="collection-btn" data-query="mountains">
+                    ⛰ Mountains
+                </button>
+
+            </div>
+
+        </aside>
+
+        <!-- Gallery Section -->
+        <section class="gallery-section">
+
+            <!-- Results Info -->
+            <div class="results-info">
+                <h2 id="galleryTitle">
+                    Featured Photos
+                </h2>
+
+                <span id="photoCount">
+                    Loading...
+                </span>
+            </div>
+
+            <!-- Error State -->
+            <div id="errorBox" class="hidden">
+                <h3>⚠ Something went wrong</h3>
+                <p>Unable to load photos.</p>
+                <button id="retryBtn">Retry</button>
+            </div>
+
+            <!-- Empty State -->
+            <div id="emptyState" class="hidden">
+                <h3>No Photos Found</h3>
+                <p>Try another search keyword.</p>
+            </div>
+
+            <!-- Masonry Gallery -->
+            <div id="gallery" class="gallery"></div>
+
+            <!-- Skeleton Loader -->
+            <div id="skeletonContainer" class="skeleton-container hidden">
+
+                <div class="skeleton-card"></div>
+                <div class="skeleton-card"></div>
+                <div class="skeleton-card"></div>
+                <div class="skeleton-card"></div>
+                <div class="skeleton-card"></div>
+                <div class="skeleton-card"></div>
+                <div class="skeleton-card"></div>
+                <div class="skeleton-card"></div>
+                <div class="skeleton-card"></div>
+                <div class="skeleton-card"></div>
+
+            </div>
+
+            <!-- Sentinel -->
+            <div id="scroll-sentinel"></div>
+
+        </section>
+
+    </main>
+
+    <!-- Lightbox -->
+    <div id="lightbox" class="lightbox hidden">
+
+        <button id="closeLightbox" class="close-btn">
+            &times;
+        </button>
+
+        <button id="prevPhoto" class="nav-btn prev">
+            ❮
+        </button>
+
+        <div class="lightbox-content">
+
+            <img
+                id="lightboxImage"
+                src=""
+                alt=""
+            >
+
+            <div class="lightbox-info">
+
+                <div class="photographer">
+
+                    <img
+                        id="authorAvatar"
+                        src=""
+                        alt="Author"
+                    >
+
+                    <div>
+                        <h3 id="authorName">
+                            Photographer
+                        </h3>
+
+                        <p id="imageSize">
+                            Size
+                        </p>
+                    </div>
+
+                </div>
+
+                <div class="lightbox-actions">
+
+                    <a
+                        id="downloadBtn"
+                        href="#"
+                        target="_blank"
+                        class="download-btn"
+                    >
+                        Download
+                    </a>
+
+                    <span id="likesCount">
+                        ❤ 0 Likes
+                    </span>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <button id="nextPhoto" class="nav-btn next">
+            ❯
+        </button>
+
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>
+            Infinite Scroll Gallery • Unsplash API • Masonry Layout
+        </p>
+    </footer>
+
+    <script src="script.js"></script>
+
+</body>
+</html>

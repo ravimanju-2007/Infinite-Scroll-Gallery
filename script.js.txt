@@ -1,0 +1,549 @@
+// ===============================
+// UNSPLASH CONFIG
+// ===============================
+
+const ACCESS_KEY = "_BskLn4Cor4d_JQDggxmloi7uGV55zglwqCtQvcXK9M";
+
+const gallery = document.getElementById("gallery");
+const searchInput = document.getElementById("searchInput");
+const searchBtn = document.getElementById("searchBtn");
+const galleryTitle = document.getElementById("galleryTitle");
+const photoCount = document.getElementById("photoCount");
+
+const sentinel = document.getElementById("scroll-sentinel");
+
+const pageLoader = document.getElementById("page-loader");
+const skeletonContainer = document.getElementById("skeletonContainer");
+
+const errorBox = document.getElementById("errorBox");
+const retryBtn = document.getElementById("retryBtn");
+const emptyState = document.getElementById("emptyState");
+
+// ===============================
+// LIGHTBOX ELEMENTS
+// ===============================
+
+const lightbox = document.getElementById("lightbox");
+const lightboxImage = document.getElementById("lightboxImage");
+const authorName = document.getElementById("authorName");
+const authorAvatar = document.getElementById("authorAvatar");
+const imageSize = document.getElementById("imageSize");
+const likesCount = document.getElementById("likesCount");
+const downloadBtn = document.getElementById("downloadBtn");
+
+const closeLightbox = document.getElementById("closeLightbox");
+const prevPhoto = document.getElementById("prevPhoto");
+const nextPhoto = document.getElementById("nextPhoto");
+
+// ===============================
+// APP STATE
+// ===============================
+
+let page = 1;
+let query = "";
+let loading = false;
+let exhausted = false;
+
+let photos = [];
+let currentIndex = 0;
+
+// ===============================
+// INIT
+// ===============================
+
+window.addEventListener("DOMContentLoaded", () => {
+
+    const params = new URLSearchParams(window.location.search);
+
+    if (params.get("q")) {
+        query = params.get("q");
+        searchInput.value = query;
+    }
+
+    loadPhotos(true);
+
+    setTimeout(() => {
+        pageLoader.style.display = "none";
+    }, 1000);
+});
+
+// ===============================
+// HELPERS
+// ===============================
+
+function showSkeleton() {
+    skeletonContainer.classList.remove("hidden");
+}
+
+function hideSkeleton() {
+    skeletonContainer.classList.add("hidden");
+}
+
+function showError() {
+    errorBox.classList.remove("hidden");
+}
+
+function hideError() {
+    errorBox.classList.add("hidden");
+}
+
+function showEmpty() {
+    emptyState.classList.remove("hidden");
+}
+
+function hideEmpty() {
+    emptyState.classList.add("hidden");
+}
+
+// ===============================
+// FETCH PHOTOS
+// ===============================
+
+async function fetchPhotos() {
+
+    let url = "";
+
+    if (query.trim()) {
+
+        url =
+            `https://api.unsplash.com/search/photos?page=${page}&per_page=20&query=${query}&client_id=${ACCESS_KEY}`;
+
+    } else {
+
+        url =
+            `https://api.unsplash.com/photos?page=${page}&per_page=20&client_id=${ACCESS_KEY}`;
+    }
+
+    const response = await fetch(url);
+
+    if (!response.ok) {
+        throw new Error("Failed to fetch");
+    }
+
+    const data = await response.json();
+
+    return query ? data.results : data;
+}
+
+// ===============================
+// LOAD PHOTOS
+// ===============================
+
+async function loadPhotos(reset = false) {
+
+    if (loading || exhausted) return;
+
+    loading = true;
+
+    hideError();
+    hideEmpty();
+    showSkeleton();
+
+    try {
+
+        if (reset) {
+            page = 1;
+            exhausted = false;
+            photos = [];
+            gallery.innerHTML = "";
+        }
+
+        const fetchedPhotos = await fetchPhotos();
+
+        if (fetchedPhotos.length === 0) {
+
+            exhausted = true;
+
+            if (page === 1) {
+                showEmpty();
+            }
+
+            return;
+        }
+
+        photos.push(...fetchedPhotos);
+
+        renderPhotos(fetchedPhotos);
+
+        photoCount.textContent =
+            `${photos.length} Photos`;
+
+        galleryTitle.textContent =
+            query ? `Results for "${query}"` : "Featured Photos";
+
+        page++;
+
+    } catch (error) {
+
+        console.error(error);
+        showError();
+
+    } finally {
+
+        hideSkeleton();
+        loading = false;
+    }
+}
+
+// ===============================
+// RENDER PHOTOS
+// ===============================
+
+function renderPhotos(items) {
+
+    items.forEach((photo) => {
+
+        const card = document.createElement("div");
+        card.className = "photo-card";
+
+        card.innerHTML = `
+            <img
+                src="${photo.urls.small}"
+                srcset="
+                    ${photo.urls.small} 400w,
+                    ${photo.urls.regular} 1080w
+                "
+                sizes="(max-width:768px) 100vw, 25vw"
+                alt="${photo.alt_description || "Photo"}"
+                loading="lazy"
+                decoding="async"
+            >
+
+            <div class="photo-overlay">
+                <div class="photo-info">
+                    <h4>${photo.user.name}</h4>
+                    <p>❤ ${photo.likes}</p>
+                </div>
+            </div>
+        `;
+
+        card.addEventListener("click", () => {
+            openLightbox(photo.id);
+        });
+
+        gallery.appendChild(card);
+    });
+}// ===============================
+// LIGHTBOX
+// ===============================
+
+function openLightbox(photoId) {
+
+    currentIndex = photos.findIndex(
+        photo => photo.id === photoId
+    );
+
+    if (currentIndex === -1) return;
+
+    updateLightbox();
+
+    lightbox.classList.remove("hidden");
+    document.body.style.overflow = "hidden";
+
+    const params = new URLSearchParams(window.location.search);
+
+    if (query) {
+        params.set("q", query);
+    }
+
+    params.set("photo", photoId);
+
+    history.pushState(
+        {},
+        "",
+        `${window.location.pathname}?${params.toString()}`
+    );
+}
+
+function updateLightbox() {
+
+    const photo = photos[currentIndex];
+
+    if (!photo) return;
+
+    lightboxImage.src = photo.urls.regular;
+
+    authorName.textContent =
+        photo.user.name;
+
+    authorAvatar.src =
+        photo.user.profile_image.medium;
+
+    imageSize.textContent =
+        `${photo.width} × ${photo.height}`;
+
+    likesCount.textContent =
+        `❤ ${photo.likes} Likes`;
+
+    downloadBtn.href =
+        photo.links.download;
+}
+
+function closeLightboxHandler() {
+
+    lightbox.classList.add("hidden");
+
+    document.body.style.overflow = "";
+
+    const params = new URLSearchParams(window.location.search);
+
+    params.delete("photo");
+
+    history.pushState(
+        {},
+        "",
+        `${window.location.pathname}?${params.toString()}`
+    );
+}
+
+function nextImage() {
+
+    if (photos.length === 0) return;
+
+    currentIndex++;
+
+    if (currentIndex >= photos.length) {
+        currentIndex = 0;
+    }
+
+    updateLightbox();
+}
+
+function prevImage() {
+
+    if (photos.length === 0) return;
+
+    currentIndex--;
+
+    if (currentIndex < 0) {
+        currentIndex = photos.length - 1;
+    }
+
+    updateLightbox();
+}
+
+// ===============================
+// LIGHTBOX EVENTS
+// ===============================
+
+closeLightbox.addEventListener(
+    "click",
+    closeLightboxHandler
+);
+
+nextPhoto.addEventListener(
+    "click",
+    nextImage
+);
+
+prevPhoto.addEventListener(
+    "click",
+    prevImage
+);
+
+lightbox.addEventListener("click", (e) => {
+
+    if (e.target === lightbox) {
+        closeLightboxHandler();
+    }
+});
+
+// ===============================
+// KEYBOARD NAVIGATION
+// ===============================
+
+document.addEventListener("keydown", (e) => {
+
+    if (lightbox.classList.contains("hidden"))
+        return;
+
+    if (e.key === "Escape") {
+        closeLightboxHandler();
+    }
+
+    if (e.key === "ArrowRight") {
+        nextImage();
+    }
+
+    if (e.key === "ArrowLeft") {
+        prevImage();
+    }
+});
+
+// ===============================
+// SEARCH
+// ===============================
+
+let debounceTimer;
+
+function performSearch() {
+
+    query = searchInput.value.trim();
+
+    const params = new URLSearchParams();
+
+    if (query) {
+        params.set("q", query);
+    }
+
+    history.pushState(
+        {},
+        "",
+        `${window.location.pathname}?${params.toString()}`
+    );
+
+    loadPhotos(true);
+}
+
+searchBtn.addEventListener(
+    "click",
+    performSearch
+);
+
+searchInput.addEventListener(
+    "input",
+    () => {
+
+        clearTimeout(debounceTimer);
+
+        debounceTimer = setTimeout(
+            performSearch,
+            400
+        );
+    }
+);
+
+// ===============================
+// COLLECTION BUTTONS
+// ===============================
+
+const collectionButtons =
+    document.querySelectorAll(
+        ".collection-btn"
+    );
+
+collectionButtons.forEach((btn) => {
+
+    btn.addEventListener("click", () => {
+
+        collectionButtons.forEach(
+            item => item.classList.remove("active")
+        );
+
+        btn.classList.add("active");
+
+        query = btn.dataset.query;
+
+        searchInput.value = query;
+
+        const params =
+            new URLSearchParams();
+
+        if (query) {
+            params.set("q", query);
+        }
+
+        history.pushState(
+            {},
+            "",
+            `${window.location.pathname}?${params.toString()}`
+        );
+
+        loadPhotos(true);
+    });
+});
+
+// ===============================
+// RETRY BUTTON
+// ===============================
+
+retryBtn.addEventListener(
+    "click",
+    () => {
+        loadPhotos(false);
+    }
+);
+
+// ===============================
+// INFINITE SCROLL
+// ===============================
+
+const observer =
+    new IntersectionObserver(
+        (entries) => {
+
+            const entry = entries[0];
+
+            if (entry.isIntersecting) {
+
+                loadPhotos(false);
+            }
+        },
+        {
+            rootMargin: "300px"
+        }
+    );
+
+observer.observe(sentinel);
+
+// ===============================
+// BROWSER HISTORY SUPPORT
+// ===============================
+
+window.addEventListener(
+    "popstate",
+    () => {
+
+        const params =
+            new URLSearchParams(
+                window.location.search
+            );
+
+        query = params.get("q") || "";
+
+        searchInput.value = query;
+
+        loadPhotos(true);
+    }
+);
+
+// ===============================
+// OPEN PHOTO FROM URL
+// ===============================
+
+window.addEventListener(
+    "load",
+    () => {
+
+        setTimeout(() => {
+
+            const params =
+                new URLSearchParams(
+                    window.location.search
+                );
+
+            const photoId =
+                params.get("photo");
+
+            if (!photoId) return;
+
+            const photo =
+                photos.find(
+                    p => p.id === photoId
+                );
+
+            if (photo) {
+                openLightbox(photoId);
+            }
+
+        }, 1500);
+    }
+);
+
+// ===============================
+// END OF FILE
+// ===============================
+
+console.log(
+    "Infinite Scroll Gallery Loaded Successfully"
+);
